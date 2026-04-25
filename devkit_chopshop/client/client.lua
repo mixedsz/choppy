@@ -344,9 +344,6 @@ end
 
 -- Setup blips
 function setupBlips()
-    print("^3[ChopShop DEBUG] setupBlips called^0")
-
-    -- Remove existing blips
     for _, blip in ipairs(shopBlips) do
         if DoesBlipExist(blip) then
             RemoveBlip(blip)
@@ -354,76 +351,28 @@ function setupBlips()
     end
     shopBlips = {}
 
-    -- Create new blips
-    local blipCount = 0
     for shopId, shopData in pairs(allShops) do
-        print(string.format("^3[ChopShop DEBUG] Shop #%d: %s^0", shopId, shopData.name or "Unknown"))
-
-        -- Use chopping coords for blip location
         local coords = shopData.coords or {}
         local blipData = shopData.blip or {}
 
-        print(string.format("^3[ChopShop DEBUG] Blip data: sprite=%s, color=%s, scale=%s^0",
-            tostring(blipData.sprite), tostring(blipData.color), tostring(blipData.scale)))
-
-        -- If no chop coords, don't create blip (don't fall back to boss coords)
-        if #coords > 0 then
-            if blipData.sprite and blipData.sprite > 0 then
-                blipData.color = blipData.color or 42
-                blipData.scale = blipData.scale or 0.7
-
-                -- Use first chopping location for blip
-                local coord = coords[1]
-                if coord and coord.x and coord.y and coord.z then
-                    local blip = AddBlipForCoord(coord.x, coord.y, coord.z)
-
-                    if not DoesBlipExist(blip) then
-                        print("^1[ChopShop DEBUG] FAILED to create blip!^0")
-                    else
-                        SetBlipSprite(blip, blipData.sprite)
-                        SetBlipDisplay(blip, 4)
-                        SetBlipScale(blip, blipData.scale)
-                        SetBlipColour(blip, blipData.color)
-                        SetBlipAsShortRange(blip, true)  -- TRUE = Show on map when in range, FALSE = always on radar
-                        SetBlipAlpha(blip, 255)  -- Full opacity
-                        SetBlipCategory(blip, 1)  -- Category: default
-                        BeginTextCommandSetBlipName("STRING")
-                        AddTextComponentString(shopData.name or ("ChopShop #" .. tostring(shopId)))
-                        EndTextCommandSetBlipName(blip)
-
-                        -- Force blip to show
-                        SetBlipPriority(blip, 10)  -- High priority
-                        SetBlipHiddenOnLegend(blip, false)  -- Show in legend
-
-                        table.insert(shopBlips, blip)
-                        blipCount = blipCount + 1
-
-                        local verifySprite = GetBlipSprite(blip)
-                        local verifyColor = GetBlipColour(blip)
-                        local verifyAlpha = GetBlipAlpha(blip)
-
-                        print(string.format("^2[ChopShop DEBUG]   Verify: sprite=%d, color=%d, alpha=%d^0",
-                            verifySprite, verifyColor, verifyAlpha))
-
-                        print(string.format("^2[ChopShop DEBUG] Created blip at CHOPPING location for shop #%d at %.2f, %.2f, %.2f^0",
-                            shopId, coord.x, coord.y, coord.z))
-
-                        print(string.format("^2[ChopShop DEBUG]   Set: sprite=%d, color=%d, scale=%.2f^0",
-                            blipData.sprite, blipData.color, blipData.scale))
-                    end
-                else
-                    print("^1[ChopShop DEBUG] Invalid coords for shop #" .. shopId .. "^0")
-                end
-            else
-                print(string.format("^1[ChopShop DEBUG] Blip disabled or invalid sprite for shop #%d (sprite=%s)^0",
-                    shopId, tostring(blipData.sprite)))
+        if #coords > 0 and blipData.sprite and blipData.sprite > 0 then
+            local coord = coords[1]
+            if coord and coord.x and coord.y and coord.z then
+                local blip = AddBlipForCoord(coord.x, coord.y, coord.z)
+                SetBlipSprite(blip, blipData.sprite)
+                SetBlipDisplay(blip, 4)
+                SetBlipScale(blip, blipData.scale or 0.7)
+                SetBlipColour(blip, blipData.color or 42)
+                SetBlipAsShortRange(blip, false)
+                SetBlipAlpha(blip, 255)
+                SetBlipCategory(blip, 1)
+                BeginTextCommandSetBlipName("STRING")
+                AddTextComponentString(shopData.name or ("ChopShop #" .. tostring(shopId)))
+                EndTextCommandSetBlipName(blip)
+                table.insert(shopBlips, blip)
             end
-        else
-            print("^1[ChopShop DEBUG] No chopping coords for shop #" .. shopId .. "^0")
         end
     end
-
-    print(string.format("^2[ChopShop DEBUG] Created %d blips total^0", blipCount))
 end
 
 -- Setup boss menu markers
@@ -470,28 +419,11 @@ end
 -- Event: Receive all shops
 RegisterNetEvent("devkit_chopshop:receiveAllShops")
 AddEventHandler("devkit_chopshop:receiveAllShops", function(shops)
-    print("^3[ChopShop DEBUG] Received shops from server^0")
-
-    -- Count shops properly (works with non-sequential keys)
-    local shopCount = 0
-    for _ in pairs(shops) do shopCount = shopCount + 1 end
-    print("^3[ChopShop DEBUG] Number of shops: " .. tostring(shopCount) .. "^0")
-
     allShops = shops
-
-    print("^3[ChopShop DEBUG] Setting up boss menu targets...^0")
     setupBossMenuTargets()
-
-    print("^3[ChopShop DEBUG] Setting up chop zones...^0")
     setupChopZones()
-
-    print("^3[ChopShop DEBUG] Setting up blips...^0")
     setupBlips()
-
-    print("^3[ChopShop DEBUG] Setting up boss menu markers...^0")
     setupBossMenuMarkers()
-
-    print("^2[ChopShop DEBUG] All shops setup complete!^0")
 end)
 
 -- Event: Receive shop data (for purchase/management)
@@ -735,9 +667,6 @@ function openAdminShopDetails(shopId)
         return
     end
 
-    print(string.format("^3[ChopShop DEBUG] Opening admin details for shop #%d, blip sprite: %s^0",
-        shopId, tostring((shop.blip or {}).sprite)))
-
     local menuId = "chopshop_admin_details_" .. tostring(shopId)
     local title = string.format("Edit Shop #%d (%s)", shopId, shop.name or "??")
     
@@ -810,8 +739,6 @@ function openAdminShopDetails(shopId)
                 local scale = blipData.scale or 0.7
                 local enabled = sprite > 0
 
-                print(string.format("^3[ChopShop DEBUG] Opening blip editor - current sprite: %d, enabled: %s^0", sprite, tostring(enabled)))
-
                 local input = lib.inputDialog("Edit Blip", {
                     {type = "checkbox", label = "Enable Blip?", default = enabled},
                     {type = "number", label = "Sprite", default = (sprite > 0 and sprite or 225)},
@@ -833,7 +760,6 @@ function openAdminShopDetails(shopId)
                     newSprite = 225
                 end
 
-                print(string.format("^3[ChopShop DEBUG] Saving blip - sprite: %d, color: %d, scale: %.2f^0", newSprite, newColor, newScale))
                 TriggerServerEvent("devkit_chopshop:adminUpdateShopBlip", shopId, newSprite, newColor, newScale)
 
                 -- Wait for server to update and client to receive new data
@@ -1116,17 +1042,12 @@ end)
 
 -- Setup boss menu targets
 function setupBossMenuTargets()
-    print("^3[ChopShop DEBUG] setupBossMenuTargets called, System: " .. Config.System .. "^0")
-
     if Config.System == "ox_target" then
-        -- Remove existing targets
         for shopId, zoneId in pairs(bossMenuTargets) do
             exports.ox_target:removeZone(zoneId)
         end
         bossMenuTargets = {}
 
-        -- Create new targets
-        local targetCount = 0
         for shopId, shopData in pairs(allShops) do
             local bossCoords = shopData.bosscoords
             if bossCoords and bossCoords.x then
@@ -1145,52 +1066,37 @@ function setupBossMenuTargets()
                     }
                 })
                 bossMenuTargets[shopId] = zoneId
-                targetCount = targetCount + 1
-                print(string.format("^2[ChopShop DEBUG] Created ox_target boss zone for shop #%d at %.2f, %.2f, %.2f^0",
-                    shopId, bossCoords.x, bossCoords.y, bossCoords.z))
             end
         end
-        print(string.format("^2[ChopShop DEBUG] Created %d ox_target boss zones^0", targetCount))
     else
-        -- Remove existing zones
         for shopId, zone in pairs(bossMenuTargets) do
             zone:remove()
         end
         bossMenuTargets = {}
 
-        -- Create new zones
-        local zoneCount = 0
         for shopId, shopData in pairs(allShops) do
             local bossCoords = shopData.bosscoords
             if bossCoords and bossCoords.x then
-                print(string.format("^3[ChopShop DEBUG] Creating textui boss zone for shop #%d at %.2f, %.2f, %.2f^0",
-                    shopId, bossCoords.x, bossCoords.y, bossCoords.z))
-
                 local zone = lib.zones.sphere({
                     coords = vec3(bossCoords.x, bossCoords.y, bossCoords.z),
                     radius = 2.0,
                     debug = false,
                     textUIShown = false,
                     onEnter = function(self)
-                        print("^2[ChopShop DEBUG] ========== PLAYER ENTERED BOSS ZONE FOR SHOP #" .. shopId .. " ==========^0")
-                        -- Reset state when entering zone
                         self.textUIShown = false
                     end,
                     inside = function(self)
                         if not self.textUIShown then
-                            print("^2[ChopShop DEBUG] ========== SHOWING BOSS MENU TEXTUI FOR SHOP #" .. shopId .. " ==========^0")
                             Config.ShowTextUI("[E] - Manage Chop Shop")
                             self.textUIShown = true
                         end
 
-                        if IsControlJustPressed(0, 38) then -- E key
-                            print("^2[ChopShop DEBUG] ========== E PRESSED IN BOSS ZONE FOR SHOP #" .. shopId .. " ==========^0")
+                        if IsControlJustPressed(0, 38) then
                             TriggerServerEvent("devkit_chopshop:getShopData", shopId)
                             Wait(500)
                         end
                     end,
                     onExit = function(self)
-                        print("^3[ChopShop DEBUG] ========== PLAYER EXITED BOSS ZONE FOR SHOP #" .. shopId .. " ==========^0")
                         if self.textUIShown then
                             Config.HideTextUI()
                             self.textUIShown = false
@@ -1198,58 +1104,10 @@ function setupBossMenuTargets()
                     end
                 })
                 bossMenuTargets[shopId] = zone
-                zoneCount = zoneCount + 1
-                print(string.format("^2[ChopShop DEBUG] Created textui boss zone for shop #%d^0", shopId))
-            else
-                print(string.format("^1[ChopShop DEBUG] No boss coords for shop #%d^0", shopId))
             end
         end
-        print(string.format("^2[ChopShop DEBUG] Created %d textui boss zones^0", zoneCount))
     end
 end
-
--- Debug command to check blip locations
-RegisterCommand("chopblips", function()
-    print("^3========== CHOP SHOP BLIPS DEBUG ==========^0")
-    for shopId, shopData in pairs(allShops) do
-        local blipData = shopData.blip or {}
-        local coords = shopData.coords or {}
-        if #coords < 1 and shopData.bosscoords then
-            coords[1] = shopData.bosscoords
-        end
-
-        if #coords > 0 then
-            local coord = coords[1]
-            print(string.format("^2Shop #%d (%s):^0", shopId, shopData.name or "Unknown"))
-            print(string.format("  Coords: %.2f, %.2f, %.2f", coord.x, coord.y, coord.z))
-            print(string.format("  Blip: sprite=%s, color=%s, scale=%s",
-                tostring(blipData.sprite), tostring(blipData.color), tostring(blipData.scale)))
-            print(string.format("  Blip enabled: %s", tostring(blipData.sprite and blipData.sprite > 0)))
-
-            -- Set waypoint to this location
-            SetNewWaypoint(coord.x, coord.y)
-            print(string.format("^2  Waypoint set to shop location!^0"))
-
-            -- Check if blip exists in our table
-            local blipExists = false
-            for _, blip in ipairs(shopBlips) do
-                if DoesBlipExist(blip) then
-                    local blipCoord = GetBlipCoords(blip)
-                    if math.abs(blipCoord.x - coord.x) < 1 and math.abs(blipCoord.y - coord.y) < 1 then
-                        blipExists = true
-                        print(string.format("^2  Blip EXISTS in game at %.2f, %.2f, %.2f^0", blipCoord.x, blipCoord.y, blipCoord.z))
-                        print(string.format("  Blip sprite: %d, color: %d, display: %d, alpha: %d",
-                            GetBlipSprite(blip), GetBlipColour(blip), GetBlipDisplay(blip), GetBlipAlpha(blip)))
-                    end
-                end
-            end
-            if not blipExists then
-                print("^1  Blip NOT FOUND in game!^0")
-            end
-        end
-    end
-    print("^3==========================================^0")
-end, false)
 
 -- Register command on resource start
 AddEventHandler("onClientResourceStart", function(resourceName)
