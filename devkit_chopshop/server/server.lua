@@ -221,16 +221,6 @@ end
 -- Event: Request all shops
 RegisterNetEvent("devkit_chopshop:requestAllShops", function()
     local src = source
-    print(string.format("^3[ChopShop DEBUG] Player %d requested all shops^0", src))
-    print(string.format("^3[ChopShop DEBUG] Sending %d shops to client^0", table.count(allShops)))
-
-    -- Debug: Print each shop's blip data
-    for shopId, shopData in pairs(allShops) do
-        local blipData = shopData.blip or {}
-        print(string.format("^3[ChopShop DEBUG] Shop #%d (%s): blip sprite=%s^0",
-            shopId, shopData.name or "Unknown", tostring(blipData.sprite)))
-    end
-
     TriggerClientEvent("devkit_chopshop:receiveAllShops", src, allShops)
 end)
 
@@ -548,32 +538,14 @@ end)
 RegisterNetEvent("devkit_chopshop:adminUpdateShopBlip", function(shopId, sprite, color, scale)
     local src = source
 
-    print(string.format("^3[ChopShop DEBUG] adminUpdateShopBlip called for shop #%d^0", shopId))
-    print(string.format("^3[ChopShop DEBUG] Blip values: sprite=%s, color=%s, scale=%s^0",
-        tostring(sprite), tostring(color), tostring(scale)))
-
-    if not isPlayerAdmin(src) then
-        print("^1[ChopShop DEBUG] Player is not admin!^0")
-        return
-    end
+    if not isPlayerAdmin(src) then return end
 
     local shop = allShops[shopId]
     if shop then
-        shop.blip = {
-            sprite = sprite,
-            color = color,
-            scale = scale
-        }
-        print(string.format("^2[ChopShop DEBUG] Updated shop #%d blip in memory^0", shopId))
-
+        shop.blip = { sprite = sprite, color = color, scale = scale }
         saveShop(shopId)
-        print(string.format("^2[ChopShop DEBUG] Saved shop #%d to database^0", shopId))
-
         TriggerClientEvent('devkit_chopshopCL:notify', src, "Blip updated!", "success")
         TriggerClientEvent("devkit_chopshop:receiveAllShops", -1, allShops)
-        print("^2[ChopShop DEBUG] Sent updated shops to all clients^0")
-    else
-        print(string.format("^1[ChopShop DEBUG] Shop #%d not found!^0", shopId))
     end
 end)
 
