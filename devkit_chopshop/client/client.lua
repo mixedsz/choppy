@@ -360,7 +360,7 @@ function setupBlips()
             if coord and coord.x and coord.y and coord.z then
                 local blip = AddBlipForCoord(coord.x, coord.y, coord.z)
                 SetBlipSprite(blip, blipData.sprite)
-                SetBlipDisplay(blip, 4)
+                SetBlipDisplay(blip, 6)
                 SetBlipScale(blip, blipData.scale or 0.7)
                 SetBlipColour(blip, blipData.color or 42)
                 SetBlipAsShortRange(blip, false)
